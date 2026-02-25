@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PX 정산기 Pro</title>
+    <style>
+        :root { --primary: #1b5e20; --secondary: #4caf50; --bg: #f0f2f5; }
+        body { font-family: -apple-system, sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
+        .tab-menu { display: flex; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 10; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; font-size: 1rem; font-weight: bold; color: #777; cursor: pointer; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        .content { padding: 20px; display: none; }
+        .content.active { display: block; }
+        .card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        h3 { margin-top: 0; font-size: 1.1rem; color: #333; margin-bottom: 15px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.85rem; color: #666; margin-bottom: 6px; }
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1.1rem; box-sizing: border-box; background: #fafafa; }
+        input:focus { border-color: var(--secondary); outline: none; background: white; }
+        .unit { position: absolute; right: 12px; color: #999; font-weight: bold; }
+        .res-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+        .res-row:last-child { border-bottom: none; }
+        .res-label { color: #555; }
+        .res-val { font-weight: 600; color: #222; }
+        .minus { color: #d32f2f; }
+        .highlight { color: var(--primary); font-weight: 800; font-size: 1.2rem; }
+        .info-text { font-size: 0.8rem; color: #999; text-align: center; margin-top: 10px; line-height: 1.4; }
+    </style>
+</head>
+<body>
+
+<div class="tab-menu">
+    <button class="tab-btn active" onclick="openTab(event, 'calc-tab')">금액 계산</button>
+    <button class="tab-btn" onclick="openTab(event, 'config-tab')">환경 설정</button>
+</div>
+
+<div id="calc-tab" class="content active">
+    <div class="card">
+        <h3>💰 금액 입력</h3>
+        <div class="input-group">
+            <label>PX 판매가 (VAT 별도)</label>
+            <div class="input-wrapper">
+                <input type="number" id="inputSalePrice" placeholder="금액 입력" oninput="calculateAll()">
+                <span class="unit">원</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>📊 계산 상세</h3>
+        <div class="res-row">
+            <span class="res-label">0. PX 판매가</span>
+            <span class="res-val" id="row0">0 원</span>
+        </div>
+        <div class="res-row">
+            <span class="res-label">1. 복지율 차감</span>
+            <span class="res-val minus" id="row1">0 원</span>
+        </div>
+        <div class="res-row" style="background: #f9f9f9; padding: 12px 5px;">
+            <span class="res-label" style="font-weight:bold;">2. PX 납품가</span>
+            <span class="res-val" id="row2" style="color:blue;">0 원</span>
+        </div>
+        <div class="res-row">
+            <span class="res-label">3. 관리수수료 (납품가 기준)</span>
+            <span class="res-val minus" id="row3">0 원</span>
+        </div>
+        <div class="res-row">
+            <span class="res-label">4. 카드수수료 (판매가 기준)</span>
+            <span class="res-val minus" id="row4">0 원</span>
+        </div>
+        <div class="res-row">
+            <span class="res-label">5. 물류위탁수수료 (납품가 기준)</span>
+            <span class="res-val minus" id="row5">0 원</span>
+        </div>
+        <div class="res-row" style="margin-top:10px; border-top: 2px solid #333; padding-top: 15px;">
+            <span class="res-label" style="font-weight:bold;">6. 최종 정산금액</span>
+            <span class="res-val highlight" id="row6">0 원</span>
+        </div>
+    </div>
+    <div class="info-text">
+        관리수수료와 물류수수료는 <br><strong>PX 납품가(판매가-복지율)</strong>를 기준으로 계산됩니다.
+    </div>
+</div>
+
+<div id="config-tab" class="content">
+    <div class="card">
+        <h3>⚙️ 수수료율 설정 (%)</h3>
+        <div class="input-group">
+            <label>복지율 (판매가 기준)</label>
+            <div class="input-wrapper">
+                <input type="number" id="cfgWelfare" value="15" step="0.1" oninput="calculateAll()">
+                <span class="unit">%</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>관리수수료 (납품가 기준)</label>
+            <div class="input-wrapper">
+                <input type="number" id="cfgAdmin" value="2" step="0.1" oninput="calculateAll()">
+                <span class="unit">%</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>카드수수료 (판매가 기준)</label>
+            <div class="input-wrapper">
+                <input type="number" id="cfgCard" value="0.5" step="0.1" oninput="calculateAll()">
+                <span class="unit">%</span>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>물류위탁수수료 (납품가 기준)</label>
+            <div class="input-wrapper">
+                <input type="number" id="cfgShip" value="5" step="0.1" oninput="calculateAll()">
+                <span class="unit">%</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openTab(evt, tabName) {
+        var i, content, tabBtn;
+        content = document.getElementsByClassName("content");
+        for (i = 0; i < content.length; i++) { content[i].style.display = "none"; }
+        tabBtn = document.getElementsByClassName("tab-btn");
+        for (i = 0; i < tabBtn.length; i++) { tabBtn[i].className = tabBtn[i].className.replace(" active", ""); }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
+
+    function calculateAll() {
+        const salePrice = parseFloat(document.getElementById('inputSalePrice').value) || 0;
+        const rateWelfare = (parseFloat(document.getElementById('cfgWelfare').value) || 0) / 100;
+        const rateAdmin = (parseFloat(document.getElementById('cfgAdmin').value) || 0) / 100;
+        const rateCard = (parseFloat(document.getElementById('cfgCard').value) || 0) / 100;
+        const rateShip = (parseFloat(document.getElementById('cfgShip').value) || 0) / 100;
+
+        const welfareAmt = salePrice * rateWelfare;           
+        const supplyPrice = salePrice - welfareAmt;           
+        
+        // 수정된 부분: 관리수수료와 물류수수료 모두 supplyPrice(납품가) 기준
+        const adminFee = supplyPrice * rateAdmin;             
+        const cardFee = salePrice * rateCard;                 
+        const shipFee = supplyPrice * rateShip;               
+        
+        const finalAmt = supplyPrice - (adminFee + cardFee + shipFee); 
+
+        const f = (n) => Math.round(n).toLocaleString() + " 원";
+        
+        document.getElementById('row0').innerText = f(salePrice);
+        document.getElementById('row1').innerText = "-" + f(welfareAmt);
+        document.getElementById('row2').innerText = f(supplyPrice);
+        document.getElementById('row3').innerText = "-" + f(adminFee);
+        document.getElementById('row4').innerText = "-" + f(cardFee);
+        document.getElementById('row5').innerText = "-" + f(shipFee);
+        document.getElementById('row6').innerText = f(finalAmt);
+    }
+</script>
+
+</body>
+</html>
