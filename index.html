@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PX 정산기 Pro</title>
+    <title>PX 정산기 Pro (Auto-Save)</title>
     <style>
         :root { --primary: #1b5e20; --secondary: #4caf50; --bg: #f0f2f5; }
         body { font-family: -apple-system, sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
@@ -26,8 +25,9 @@
         .res-label { color: #555; }
         .res-val { font-weight: 600; color: #222; }
         .minus { color: #d32f2f; }
-        .highlight { color: var(--primary); font-weight: 800; font-size: 1.2rem; }
+        .highlight { color: var(--primary); font-weight: 800; font-size: 1.3rem; }
         .info-text { font-size: 0.8rem; color: #999; text-align: center; margin-top: 10px; line-height: 1.4; }
+        .save-msg { font-size: 0.75rem; color: var(--secondary); text-align: right; margin-top: -10px; margin-bottom: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -51,75 +51,94 @@
 
     <div class="card">
         <h3>📊 계산 상세</h3>
-        <div class="res-row">
-            <span class="res-label">0. PX 판매가</span>
-            <span class="res-val" id="row0">0 원</span>
-        </div>
-        <div class="res-row">
-            <span class="res-label">1. 복지율 차감</span>
-            <span class="res-val minus" id="row1">0 원</span>
-        </div>
-        <div class="res-row" style="background: #f9f9f9; padding: 12px 5px;">
-            <span class="res-label" style="font-weight:bold;">2. PX 납품가</span>
-            <span class="res-val" id="row2" style="color:blue;">0 원</span>
-        </div>
-        <div class="res-row">
-            <span class="res-label">3. 관리수수료 (납품가 기준)</span>
-            <span class="res-val minus" id="row3">0 원</span>
-        </div>
-        <div class="res-row">
-            <span class="res-label">4. 카드수수료 (판매가 기준)</span>
-            <span class="res-val minus" id="row4">0 원</span>
-        </div>
-        <div class="res-row">
-            <span class="res-label">5. 물류위탁수수료 (납품가 기준)</span>
-            <span class="res-val minus" id="row5">0 원</span>
-        </div>
+        <div class="res-row"><span class="res-label">0. PX 판매가</span><span class="res-val" id="row0">0 원</span></div>
+        <div class="res-row"><span class="res-label">1. 복지율 차감</span><span class="res-val minus" id="row1">0 원</span></div>
+        <div class="res-row" style="background: #f9f9f9; padding: 12px 5px; border-radius: 5px;"><span class="res-label" style="font-weight:bold;">2. PX 납품가</span><span class="res-val" id="row2" style="color:#1976d2;">0 원</span></div>
+        <div class="res-row"><span class="res-label">3. 관리수수료 (납품가 기준)</span><span class="res-val minus" id="row3">0 원</span></div>
+        <div class="res-row"><span class="res-label">4. 카드수수료 (판매가 기준)</span><span class="res-val minus" id="row4">0 원</span></div>
+        <div class="res-row"><span class="res-label">5. 물류위탁수수료 (납품가 기준)</span><span class="res-val minus" id="row5">0 원</span></div>
         <div class="res-row" style="margin-top:10px; border-top: 2px solid #333; padding-top: 15px;">
             <span class="res-label" style="font-weight:bold;">6. 최종 정산금액</span>
             <span class="res-val highlight" id="row6">0 원</span>
         </div>
     </div>
-    <div class="info-text">
-        관리수수료와 물류수수료는 <br><strong>PX 납품가(판매가-복지율)</strong>를 기준으로 계산됩니다.
-    </div>
+    <div class="info-text">설정하신 수수료율은 자동으로 기기에 저장됩니다.</div>
 </div>
 
 <div id="config-tab" class="content">
     <div class="card">
-        <h3>⚙️ 수수료율 설정 (%)</h3>
+        <h3>⚙️ 환경 설정</h3>
+        <p id="saveMsg" class="save-msg">자동 저장되었습니다!</p>
         <div class="input-group">
-            <label>복지율 (판매가 기준)</label>
+            <label>복지율 (판매가 기준, %)</label>
             <div class="input-wrapper">
-                <input type="number" id="cfgWelfare" value="15" step="0.1" oninput="calculateAll()">
+                <input type="number" id="cfgWelfare" step="0.01" oninput="saveAndCalc()">
                 <span class="unit">%</span>
             </div>
         </div>
         <div class="input-group">
-            <label>관리수수료 (납품가 기준)</label>
+            <label>관리수수료 (납품가 기준, %)</label>
             <div class="input-wrapper">
-                <input type="number" id="cfgAdmin" value="2" step="0.1" oninput="calculateAll()">
+                <input type="number" id="cfgAdmin" step="0.01" oninput="saveAndCalc()">
                 <span class="unit">%</span>
             </div>
         </div>
         <div class="input-group">
-            <label>카드수수료 (판매가 기준)</label>
+            <label>카드수수료 (판매가 기준, %)</label>
             <div class="input-wrapper">
-                <input type="number" id="cfgCard" value="0.5" step="0.1" oninput="calculateAll()">
+                <input type="number" id="cfgCard" step="0.1" oninput="saveAndCalc()">
                 <span class="unit">%</span>
             </div>
         </div>
         <div class="input-group">
-            <label>물류위탁수수료 (납품가 기준)</label>
+            <label>물류위탁수수료 (납품가 기준, %)</label>
             <div class="input-wrapper">
-                <input type="number" id="cfgShip" value="5" step="0.1" oninput="calculateAll()">
+                <input type="number" id="cfgShip" step="0.1" oninput="saveAndCalc()">
                 <span class="unit">%</span>
             </div>
         </div>
+        <button onclick="resetDefaults()" style="width:100%; padding:10px; background:#eee; border:none; border-radius:8px; font-size:0.8rem; color:#666;">기본값으로 초기화</button>
     </div>
 </div>
 
 <script>
+    // 기본 디폴트값 정의
+    const defaults = { welfare: 7.2, admin: 4.09, card: 2.5, ship: 11 };
+
+    // 페이지 로드 시 저장된 값 불러오기
+    window.onload = function() {
+        document.getElementById('cfgWelfare').value = localStorage.getItem('px_welfare') || defaults.welfare;
+        document.getElementById('cfgAdmin').value = localStorage.getItem('px_admin') || defaults.admin;
+        document.getElementById('cfgCard').value = localStorage.getItem('px_card') || defaults.card;
+        document.getElementById('cfgShip').value = localStorage.getItem('px_ship') || defaults.ship;
+        calculateAll();
+    };
+
+    function saveAndCalc() {
+        // localStorage에 저장
+        localStorage.setItem('px_welfare', document.getElementById('cfgWelfare').value);
+        localStorage.setItem('px_admin', document.getElementById('cfgAdmin').value);
+        localStorage.setItem('px_card', document.getElementById('cfgCard').value);
+        localStorage.setItem('px_ship', document.getElementById('cfgShip').value);
+        
+        // 저장 알림 표시
+        const msg = document.getElementById('saveMsg');
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 1000);
+
+        calculateAll();
+    }
+
+    function resetDefaults() {
+        if(confirm("설정값을 초기 디폴트값으로 되돌리시겠습니까?")) {
+            document.getElementById('cfgWelfare').value = defaults.welfare;
+            document.getElementById('cfgAdmin').value = defaults.admin;
+            document.getElementById('cfgCard').value = defaults.card;
+            document.getElementById('cfgShip').value = defaults.ship;
+            saveAndCalc();
+        }
+    }
+
     function openTab(evt, tabName) {
         var i, content, tabBtn;
         content = document.getElementsByClassName("content");
@@ -139,16 +158,12 @@
 
         const welfareAmt = salePrice * rateWelfare;           
         const supplyPrice = salePrice - welfareAmt;           
-        
-        // 수정된 부분: 관리수수료와 물류수수료 모두 supplyPrice(납품가) 기준
         const adminFee = supplyPrice * rateAdmin;             
         const cardFee = salePrice * rateCard;                 
         const shipFee = supplyPrice * rateShip;               
-        
         const finalAmt = supplyPrice - (adminFee + cardFee + shipFee); 
 
         const f = (n) => Math.round(n).toLocaleString() + " 원";
-        
         document.getElementById('row0').innerText = f(salePrice);
         document.getElementById('row1').innerText = "-" + f(welfareAmt);
         document.getElementById('row2').innerText = f(supplyPrice);
